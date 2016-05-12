@@ -7,7 +7,7 @@ import csv
 class _Record(object):
     def __init__(self, interval, utc, value):
         self.interval = int(interval)
-        self.utc = int(utc)
+        self.utc = int(utc) / 1000.
         if not value:
             self.value = 0.
         else:
@@ -36,10 +36,8 @@ class RcData(object):
             name = field_params[0]
             if name == 'Interval':
                 self.interval_key = fieldname
-                continue
             elif name == 'Utc':
                 self.utc_key = fieldname
-                continue
             new_field = _Field(*([fieldname] + field_params))
             self.records[new_field.name] = new_field
 
@@ -48,8 +46,6 @@ class RcData(object):
             utc = row[self.utc_key]
             for (key, value) in row.iteritems():
                 name = key.split('|')[0]
-                if (name == 'Interval' or name == 'Utc'):
-                    continue
                 self.records[name].add_record(interval, utc, value)
 
     def all(self, record):

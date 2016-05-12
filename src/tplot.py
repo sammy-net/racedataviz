@@ -82,10 +82,10 @@ def _make_timestamp_getter(all_data):
     return find_child('', sample)
 
 
-def _bisect(array, item, key):
+def _bisect(array, item):
     if len(array) == 0:
         return None
-    if item < key(array[0]):
+    if item < array[0].utc:
         return None
 
     lower = 0
@@ -93,7 +93,7 @@ def _bisect(array, item, key):
 
     while abs(lower - upper) > 1:
         mid = (lower + upper) / 2
-        value = key(array[mid])
+        value = array[mid].utc
         if item < value:
             upper = mid
         else:
@@ -409,15 +409,9 @@ class Tplot(QtGui.QMainWindow):
     def update_tree_view(self, time):
         for item in self.tree_items:
             name = item.text(0)
-            if name not in self.log.all:
-                continue
-            all_data = self.log.all[name]
+            all_data = self.log.records[name].records
 
-            timestamp_getter = _make_timestamp_getter(all_data)
-            if timestamp_getter is None:
-                continue
-
-            this_data_index = _bisect(all_data, time, key=timestamp_getter)
+            this_data_index = _bisect(all_data, time)
             if this_data_index is None:
                 _clear_tree_widget(item)
             else:
@@ -433,9 +427,8 @@ class Tplot(QtGui.QMainWindow):
                 if not hasattr(line, 'tplot_has_timestamp'):
                     continue
 
-                all_data = self.log.all[line.tplot_record_name]
-                timestamp_getter = _make_timestamp_getter(all_data)
-                this_index = _bisect(all_data, new_time, timestamp_getter)
+                all_data = self.log.records[line.tplot_record_name].records
+                this_index = _bisect(all_data, new_time)
                 if this_index is None:
                     continue
 
@@ -448,8 +441,8 @@ class Tplot(QtGui.QMainWindow):
                     self.left_axis.add_line(line.tplot_marker)
 
                 updated = True
-                xdata = [_get_data(this_data, line.tplot_xname)]
-                ydata = [_get_data(this_data, line.tplot_yname)]
+                xdata = self.log.times(line.tplot_record_name)
+                ydata = self.log.all(line.tplot_record_name)
                 line.tplot_marker.set_data(xdata, ydata)
 
         if updated:
@@ -490,6 +483,8 @@ class Tplot(QtGui.QMainWindow):
         self.timer.start(100)
 
     def handle_timeout(self):
+        if self.time_current is None:
+            self.update_timeline()
         assert self.last_time is not None
         this_time = time.time()
         delta_t = this_time - self.last_time
