@@ -429,6 +429,7 @@ class Tplot(QtGui.QMainWindow):
 
                 all_data = self.log.records[line.tplot_record_name].records
                 this_index = _bisect(all_data, new_time)
+                print "updated plot dots for new time", new_time, this_index
                 if this_index is None:
                     continue
 
@@ -441,8 +442,8 @@ class Tplot(QtGui.QMainWindow):
                     self.left_axis.add_line(line.tplot_marker)
 
                 updated = True
-                xdata = self.log.times(line.tplot_record_name)
-                ydata = self.log.all(line.tplot_record_name)
+                xdata = self.log.times(line.tplot_record_name)[this_index]
+                ydata = self.log.all(line.tplot_record_name)[this_index]
                 line.tplot_marker.set_data(xdata, ydata)
 
         if updated:
