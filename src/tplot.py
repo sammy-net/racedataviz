@@ -248,32 +248,14 @@ class Tplot(QtGui.QMainWindow):
         index = [0, None]
 
         def add_item(index, parent, element):
-            if 'fields' not in element:
-                return
-            for field in element['fields']:
-                name = field['name']
-                this_name = parent
-                if len(this_name):
-                    this_name += '.'
-                this_name += name
+            name = element.name
+            self.ui.xCombo.addItem(name)
+            self.ui.yCombo.addItem(name)
 
-                if 'nelements' in field:
-                    child = field['children'][0]
-                    if 'children' in child and len(child['children']) == 1:
-                        child = ['children'][0]
-                    for i in range(field['nelements']):
-                        add_item(index, this_name + "." + str(i), child)
-                elif 'children' in field:
-                    for child in field['children']:
-                        add_item(index, this_name, child)
-                else:
-                    self.ui.xCombo.addItem(this_name)
-                    self.ui.yCombo.addItem(this_name)
+            if name == 'timestamp':
+                index[1] = index[0]
 
-                    if name == 'timestamp':
-                        index[1] = index[0]
-
-                    index[0] += 1
+            index[0] += 1
 
         add_item(index, '', exemplar)
         default_x = index[1]
@@ -286,14 +268,12 @@ class Tplot(QtGui.QMainWindow):
         xname = self.ui.xCombo.currentText()
         yname = self.ui.yCombo.currentText()
 
-        data = self.log.all[record]
-        xdata = [_get_data(x, xname) for x in data]
-        ydata = [_get_data(x, yname) for x in data]
+        xdata = self.log.times(record)
+        ydata = self.log.all(record)
 
         line = matplotlib.lines.Line2D(xdata, ydata)
         line.tplot_record_name = record
-        if 'timestamp' in [x['name'] for x in self.log.records[record]['fields']]:
-            line.tplot_has_timestamp = True
+        line.tplot_has_timestamp = True
         line.tplot_xname = xname
         line.tplot_yname = yname
         label = self.make_label(record, xname, yname)
@@ -355,13 +335,7 @@ class Tplot(QtGui.QMainWindow):
         # Look through all the records for those which have a
         # "timestamp" field.  Find the minimum and maximum of each.
         for record, exemplar in self.log.records.iteritems():
-            if record not in self.log.all:
-                continue
-            timestamp_getter = _make_timestamp_getter(self.log.all[record])
-            if timestamp_getter is None:
-                continue
-
-            these_times = [timestamp_getter(x) for x in self.log.all[record]]
+            these_times = self.log.times(record)
             if len(these_times) == 0:
                 continue
             this_min = min(these_times)

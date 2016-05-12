@@ -6,9 +6,12 @@ import csv
 
 class _Record(object):
     def __init__(self, interval, utc, value):
-        self.interval = interval
-        self.utc = utc
-        self.value = value
+        self.interval = int(interval)
+        self.utc = int(utc)
+        if not value:
+            self.value = 0.
+        else:
+            self.value = float(value)
 
 class _Field(object):
     def __init__(self, key, name, unit, minval, maxval, step):
@@ -48,3 +51,9 @@ class RcData(object):
                 if (name == 'Interval' or name == 'Utc'):
                     continue
                 self.records[name].add_record(interval, utc, value)
+
+    def all(self, record):
+        return [x.value for x in self.records[record].records]
+
+    def times(self, record):
+        return [x.utc for x in self.records[record].records]
