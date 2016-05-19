@@ -109,8 +109,7 @@ def _clear_tree_widget(item):
         _clear_tree_widget(child)
 
 
-def _set_tree_widget_data(item, struct,
-                          getter=lambda x, y: getattr(x, y),
+def _set_tree_widget_data(item, records, index,
                           required_size=0):
     if item.childCount() < required_size:
         for i in range(item.childCount(), required_size):
@@ -120,15 +119,8 @@ def _set_tree_widget_data(item, struct,
         child = item.child(i)
         name = child.text(0)
 
-        field = getter(struct, name)
-        if isinstance(field, tuple) and child.childCount() > 0:
-            _set_tree_widget_data(child, field)
-        elif isinstance(field, list):
-            _set_tree_widget_data(child, field,
-                                  getter=lambda x, y: x[int(y)],
-                                  required_size=len(field))
-        else:
-            child.setText(1, str(field))
+        field = records[name]
+        child.setText(1, str(field.records[index].value))
 
 
 def _get_data(value, name):
@@ -179,7 +171,7 @@ class Tplot(QtGui.QMainWindow):
         self.canvas.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.canvas.setFocus()
 
-        self.log = None
+        self.logs = dict()
         self.COLORS = 'rgbcmyk'
         self.next_color = 0
 
@@ -229,35 +221,40 @@ class Tplot(QtGui.QMainWindow):
         self.ui.xCombo.clear()
         self.ui.yCombo.clear()
 
-        self.log = maybe_log
-        for name in self.log.records.keys():
-            self.ui.recordCombo.addItem(name)
+        log_name = os.path.basename(filename)
+        self.logs[log_name] = maybe_log
+        self.ui.recordCombo.addItem(log_name)
 
-            item = QtGui.QTreeWidgetItem()
-            item.setText(0, name)
-            self.ui.treeWidget.addTopLevelItem(item)
-            self.tree_items.append(item)
+        item = QtGui.QTreeWidgetItem()
+        item.setText(0, log_name)
+        self.ui.treeWidget.addTopLevelItem(item)
+        self.tree_items.append(item)
+        for name in self.logs[log_name].records.keys():
+            sub_item = QtGui.QTreeWidgetItem(item)
+            sub_item.setText(0, name)
+
 
     def handle_record_combo(self):
         record = self.ui.recordCombo.currentText()
         self.ui.xCombo.clear()
         self.ui.yCombo.clear()
 
-        exemplar = self.log.records[record]
+        log = self.logs[record]
         default_x = None
         index = [0, None]
 
-        def add_item(index, parent, element):
+        def add_item(index, element):
             name = element.name
             self.ui.xCombo.addItem(name)
             self.ui.yCombo.addItem(name)
 
-            if name == 'timestamp':
+            if name == 'Utc':
                 index[1] = index[0]
 
             index[0] += 1
 
-        add_item(index, '', exemplar)
+        for item in log.records.itervalues():
+            add_item(index, item)
         default_x = index[1]
 
         if default_x:
@@ -268,8 +265,9 @@ class Tplot(QtGui.QMainWindow):
         xname = self.ui.xCombo.currentText()
         yname = self.ui.yCombo.currentText()
 
-        xdata = self.log.times(record)
-        ydata = self.log.all(record)
+        log = self.logs[record]
+        xdata = log.all(xname)
+        ydata = log.all(yname)
 
         line = matplotlib.lines.Line2D(xdata, ydata)
         line.tplot_record_name = record
@@ -332,10 +330,13 @@ class Tplot(QtGui.QMainWindow):
         if self.time_start is not None:
             return
 
-        # Look through all the records for those which have a
-        # "timestamp" field.  Find the minimum and maximum of each.
-        for record, exemplar in self.log.records.iteritems():
-            these_times = self.log.times(record)
+        # Look through all of the logs and find the minimum and
+        # maximum timestamp of each.  TODO sammy we might want to find
+        # a way to shift or align logs instead of running them
+        # serially.
+
+        for name, log in self.logs.iteritems():
+            these_times = log.times()
             if len(these_times) == 0:
                 continue
             this_min = min(these_times)
@@ -409,14 +410,14 @@ class Tplot(QtGui.QMainWindow):
     def update_tree_view(self, time):
         for item in self.tree_items:
             name = item.text(0)
-            all_data = self.log.records[name].records
+            log = self.logs[name]
+            all_times = log.records['Utc'].records
 
-            this_data_index = _bisect(all_data, time)
-            if this_data_index is None:
+            this_time_index = _bisect(all_times, time)
+            if this_time_index is None:
                 _clear_tree_widget(item)
             else:
-                this_data = all_data[this_data_index]
-                _set_tree_widget_data(item, this_data)
+                _set_tree_widget_data(item, log.records, this_time_index)
 
     def update_plot_dots(self, new_time):
         updated = False
@@ -427,13 +428,12 @@ class Tplot(QtGui.QMainWindow):
                 if not hasattr(line, 'tplot_has_timestamp'):
                     continue
 
-                all_data = self.log.records[line.tplot_record_name].records
-                this_index = _bisect(all_data, new_time)
-                print "updated plot dots for new time", new_time, this_index
-                if this_index is None:
-                    continue
+                log = self.logs[line.tplot_record_name]
+                all_times = log.records['Utc'].records
 
-                this_data = all_data[this_index]
+                this_time_index = _bisect(all_times, new_time)
+                if this_time_index is None:
+                    continue
 
                 if not hasattr(line, 'tplot_marker'):
                     line.tplot_marker = matplotlib.lines.Line2D([], [])
@@ -442,8 +442,8 @@ class Tplot(QtGui.QMainWindow):
                     self.left_axis.add_line(line.tplot_marker)
 
                 updated = True
-                xdata = self.log.times(line.tplot_record_name)[this_index]
-                ydata = self.log.all(line.tplot_record_name)[this_index]
+                xdata = log.value_at(line.tplot_xname, this_time_index)
+                ydata = log.value_at(line.tplot_yname, this_time_index)
                 line.tplot_marker.set_data(xdata, ydata)
 
         if updated:

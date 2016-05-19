@@ -51,5 +51,8 @@ class RcData(object):
     def all(self, record):
         return [x.value for x in self.records[record].records]
 
-    def times(self, record):
-        return [x.utc for x in self.records[record].records]
+    def times(self):
+        return [x.utc for x in self.records['Utc'].records]
+
+    def value_at(self, record, index):
+        return self.records[record].records[index].value
