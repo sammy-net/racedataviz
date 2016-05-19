@@ -82,26 +82,6 @@ def _make_timestamp_getter(all_data):
     return find_child('', sample)
 
 
-def _bisect(array, item):
-    if len(array) == 0:
-        return None
-    if item < array[0].utc:
-        return None
-
-    lower = 0
-    upper = len(array)
-
-    while abs(lower - upper) > 1:
-        mid = (lower + upper) / 2
-        value = array[mid].utc
-        if item < value:
-            upper = mid
-        else:
-            lower = mid
-
-    return lower
-
-
 def _clear_tree_widget(item):
     item.setText(1, '')
     for i in range(item.childCount()):
@@ -215,11 +195,11 @@ class Tplot(QtGui.QMainWindow):
             return
 
         # OK, we're good, clear out our UI.
-        self.ui.treeWidget.clear()
-        self.tree_items = []
-        self.ui.recordCombo.clear()
-        self.ui.xCombo.clear()
-        self.ui.yCombo.clear()
+        # self.ui.treeWidget.clear()
+        # self.tree_items = []
+        # self.ui.recordCombo.clear()
+        # self.ui.xCombo.clear()
+        # self.ui.yCombo.clear()
 
         log_name = os.path.basename(filename)
         self.logs[log_name] = maybe_log
@@ -248,7 +228,7 @@ class Tplot(QtGui.QMainWindow):
             self.ui.xCombo.addItem(name)
             self.ui.yCombo.addItem(name)
 
-            if name == 'Utc':
+            if name == rc_data.RELATIVE_TIME_FIELD:
                 index[1] = index[0]
 
             index[0] += 1
@@ -336,7 +316,7 @@ class Tplot(QtGui.QMainWindow):
         # serially.
 
         for name, log in self.logs.iteritems():
-            these_times = log.times()
+            these_times = log.relative_times()
             if len(these_times) == 0:
                 continue
             this_min = min(these_times)
@@ -382,10 +362,11 @@ class Tplot(QtGui.QMainWindow):
         self.update_plot_dots(new_time)
 
         # Update the text fields.
-        dt = datetime.datetime.utcfromtimestamp(new_time)
-        self.ui.clockEdit.setText('%04d-%02d-%02d %02d:%02d:%02.3f' % (
-                dt.year, dt.month, dt.day,
-                dt.hour, dt.minute, dt.second + dt.microsecond / 1e6))
+        # TODO sammy find some reasonable way to display something here.
+        # dt = datetime.datetime.utcfromtimestamp(new_time)
+        # self.ui.clockEdit.setText('%04d-%02d-%02d %02d:%02d:%02.3f' % (
+        #         dt.year, dt.month, dt.day,
+        #         dt.hour, dt.minute, dt.second + dt.microsecond / 1e6))
         self.ui.elapsedEdit.setText('%.3f' % (new_time - self.time_start))
 
         if update_slider:
@@ -411,9 +392,7 @@ class Tplot(QtGui.QMainWindow):
         for item in self.tree_items:
             name = item.text(0)
             log = self.logs[name]
-            all_times = log.records['Utc'].records
-
-            this_time_index = _bisect(all_times, time)
+            this_time_index = log.relative_index(time)
             if this_time_index is None:
                 _clear_tree_widget(item)
             else:
@@ -429,9 +408,7 @@ class Tplot(QtGui.QMainWindow):
                     continue
 
                 log = self.logs[line.tplot_record_name]
-                all_times = log.records['Utc'].records
-
-                this_time_index = _bisect(all_times, new_time)
+                this_time_index = log.relative_index(new_time)
                 if this_time_index is None:
                     continue
 
@@ -501,8 +478,8 @@ def main():
     tplot = Tplot()
     tplot.show()
 
-    if len(sys.argv) > 0:
-        tplot.open(sys.argv[1])
+    for filename in sys.argv[1:]:
+        tplot.open(filename)
 
     sys.exit(app.exec_())
 
