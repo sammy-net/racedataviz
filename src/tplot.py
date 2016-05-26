@@ -36,6 +36,7 @@ sys.path.append(os.path.join(SCRIPT_PATH, 'build-x86_64'))
 import ui_tplot_main_window
 
 import rc_data
+import sync_dialog
 
 AXES = ['Left', 'Right', '3', '4']
 
@@ -173,6 +174,8 @@ class Tplot(QtGui.QMainWindow):
         self.ui.timeSlider.valueChanged.connect(self.handle_time_slider)
         self._updating_slider = BoolGuard()
 
+        self._sync_dialog = sync_dialog.SyncDialog(self)
+
         self.ui.fastReverseButton.clicked.connect(
             self.handle_fast_reverse_button)
         self.ui.stepBackButton.clicked.connect(
@@ -185,6 +188,10 @@ class Tplot(QtGui.QMainWindow):
             self.handle_step_forward_button)
         self.ui.fastForwardButton.clicked.connect(
             self.handle_fast_forward_button)
+        self.ui.actionSynchronize.triggered.connect(self._sync_dialog.show)
+        # TODO sammy connect the time changed signal to something
+        # which will go through all of our lines and change xdata or
+        # ydata appropriately.
 
     def open(self, filename):
         try:
@@ -204,6 +211,7 @@ class Tplot(QtGui.QMainWindow):
         log_name = os.path.basename(filename)
         self.logs[log_name] = maybe_log
         self.ui.recordCombo.addItem(log_name)
+        self._sync_dialog.add_log(maybe_log)
 
         item = QtGui.QTreeWidgetItem()
         item.setText(0, log_name)
@@ -213,6 +221,9 @@ class Tplot(QtGui.QMainWindow):
             sub_item = QtGui.QTreeWidgetItem(item)
             sub_item.setText(0, name)
 
+    def open_sync_dialog(self):
+        if self._sync_dialog is None:
+            self._sync_dialog = sync_dialog.SyncDialog()
 
     def handle_record_combo(self):
         record = self.ui.recordCombo.currentText()

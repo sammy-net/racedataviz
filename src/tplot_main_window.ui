@@ -300,7 +300,7 @@
      <x>0</x>
      <y>0</y>
      <width>1010</width>
-     <height>20</height>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -308,6 +308,7 @@
      <string>File</string>
     </property>
     <addaction name="action_Open"/>
+    <addaction name="actionSynchronize"/>
     <addaction name="separator"/>
     <addaction name="action_Quit"/>
    </widget>
@@ -322,6 +323,11 @@
   <action name="action_Quit">
    <property name="text">
     <string>&amp;Quit</string>
+   </property>
+  </action>
+  <action name="actionSynchronize">
+   <property name="text">
+    <string>Synchronize</string>
    </property>
   </action>
  </widget>

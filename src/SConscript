@@ -20,5 +20,13 @@
 Import('canonenv')
 env = canonenv.Clone()
 
-env.Command('ui_tplot_main_window.py', 'tplot_main_window.ui',
-            'pyside-uic $SOURCE -o $TARGET')
+UI_FILES = [
+    'sync_dialog.ui',
+    'sync_widget.ui',
+    'tplot_main_window.ui',
+    ]
+
+for filename in UI_FILES:
+    output_name = "ui_" + filename.split('.')[0] + ".py"
+    env.Command(output_name, File(filename),
+                'pyside-uic $SOURCE -o $TARGET')

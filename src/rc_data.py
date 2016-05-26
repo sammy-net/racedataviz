@@ -33,6 +33,7 @@ class _Field(object):
 
 class RcData(object):
     def __init__(self, filename):
+        self.filename = filename
         self.csv = csv.DictReader(open(filename))
         self.records = dict()
         self.relative_start_time = None
