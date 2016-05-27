@@ -191,9 +191,6 @@ class Tplot(QtGui.QMainWindow):
             self.handle_fast_forward_button)
         self.ui.actionSynchronize.triggered.connect(self._sync_dialog.show)
         self._sync_dialog.time_changed.connect(self.handle_sync_changed)
-        # TODO sammy connect the time changed signal to something
-        # which will go through all of our lines and change xdata or
-        # ydata appropriately.
 
     def open(self, filename):
         try:
