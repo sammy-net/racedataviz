@@ -155,6 +155,7 @@ class Tplot(QtGui.QMainWindow):
         self.logs = dict()
         self.COLORS = 'rgbcmyk'
         self.next_color = 0
+        self.lines = list()
 
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.handle_timeout)
@@ -189,6 +190,7 @@ class Tplot(QtGui.QMainWindow):
         self.ui.fastForwardButton.clicked.connect(
             self.handle_fast_forward_button)
         self.ui.actionSynchronize.triggered.connect(self._sync_dialog.show)
+        self._sync_dialog.time_changed.connect(self.handle_sync_changed)
         # TODO sammy connect the time changed signal to something
         # which will go through all of our lines and change xdata or
         # ydata appropriately.
@@ -269,6 +271,7 @@ class Tplot(QtGui.QMainWindow):
         line.set_label(label)
         line.set_color(self.COLORS[self.next_color])
         self.next_color = (self.next_color + 1) % len(self.COLORS)
+        self.lines.append(line)
 
         axis = self.get_current_axis()
 
@@ -317,15 +320,23 @@ class Tplot(QtGui.QMainWindow):
     def handle_item_expanded(self):
         self.update_timeline()
 
+    def handle_sync_changed(self):
+        for line in self.lines:
+            if line.tplot_xname == rc_data.RELATIVE_TIME_FIELD:
+                line.set_xdata(
+                    self.logs[line.tplot_record_name].all(line.tplot_xname))
+            if line.tplot_yname == rc_data.RELATIVE_TIME_FIELD:
+                line.set_ydata(
+                    self.logs[line.tplot_record_name].all(line.tplot_yname))
+        self.update_timeline()
+        self.canvas.draw()
+
     def update_timeline(self):
         if self.time_start is not None:
             return
 
         # Look through all of the logs and find the minimum and
-        # maximum timestamp of each.  TODO sammy we might want to find
-        # a way to shift or align logs instead of running them
-        # serially.
-
+        # maximum timestamp of each.
         for name, log in self.logs.iteritems():
             these_times = log.relative_times()
             if len(these_times) == 0:
