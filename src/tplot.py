@@ -201,7 +201,6 @@ class Tplot(QtGui.QMainWindow):
             directory = os.path.dirname(self.logs.values()[-1].filename)
         filename = QtGui.QFileDialog.getOpenFileName(
             self, "Open log file", directory)
-        print filename
         if filename and filename[0]:
             self.open(filename[0])
 
