@@ -47,6 +47,7 @@ LEGEND_LOC = {
     '4': 4
     }
 
+ALL_LOGS_STR = 'All'
 
 class BoolGuard(object):
     def __init__(self):
@@ -191,6 +192,18 @@ class Tplot(QtGui.QMainWindow):
             self.handle_fast_forward_button)
         self.ui.actionSynchronize.triggered.connect(self._sync_dialog.show)
         self._sync_dialog.time_changed.connect(self.handle_sync_changed)
+        self.ui.action_Quit.triggered.connect(self.close)
+        self.ui.action_Open.triggered.connect(self.open_dialog)
+
+    def open_dialog(self):
+        directory = ""
+        if len(self.logs):
+            directory = os.path.dirname(self.logs.values()[-1].filename)
+        filename = QtGui.QFileDialog.getOpenFileName(
+            self, "Open log file", directory)
+        print filename
+        if filename and filename[0]:
+            self.open(filename[0])
 
     def open(self, filename):
         try:
@@ -200,15 +213,13 @@ class Tplot(QtGui.QMainWindow):
                                       'Error: ' + str(e))
             return
 
-        # OK, we're good, clear out our UI.
-        # self.ui.treeWidget.clear()
-        # self.tree_items = []
-        # self.ui.recordCombo.clear()
-        # self.ui.xCombo.clear()
-        # self.ui.yCombo.clear()
-
         log_name = os.path.basename(filename)
         self.logs[log_name] = maybe_log
+
+        # Add the magic "all logs" item for the first log opened.
+        if len(self.logs) == 1:
+            self.ui.recordCombo.addItem(ALL_LOGS_STR)
+
         self.ui.recordCombo.addItem(log_name)
         self._sync_dialog.add_log(maybe_log)
 
@@ -226,6 +237,11 @@ class Tplot(QtGui.QMainWindow):
 
     def handle_record_combo(self):
         record = self.ui.recordCombo.currentText()
+        if record == ALL_LOGS_STR:
+            # This assumes that all logs have the same fields, which
+            # seems likely.
+            record = self.logs.keys()[0]
+
         self.ui.xCombo.clear()
         self.ui.yCombo.clear()
 
@@ -255,6 +271,13 @@ class Tplot(QtGui.QMainWindow):
         xname = self.ui.xCombo.currentText()
         yname = self.ui.yCombo.currentText()
 
+        if record == ALL_LOGS_STR:
+            for record_name in self.logs.iterkeys():
+                self.add_plot(record_name, xname, yname)
+        else:
+            self.add_plot(record, xname, yname)
+
+    def add_plot(self, record, xname, yname):
         log = self.logs[record]
         xdata = log.all(xname)
         ydata = log.all(yname)
