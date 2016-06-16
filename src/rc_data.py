@@ -13,8 +13,8 @@ class _Record(object):
     def __init__(self, interval, utc, value):
         self.interval = int(interval)
         self.utc = int(utc) / 1000.
-        if not value:
-            self.value = 0.
+        if isinstance(value, str) and not len(value):
+            self.value = None
         else:
             self.value = float(value)
 
@@ -30,6 +30,40 @@ class _Field(object):
 
     def add_record(self, interval, utc, value):
         self.records.append(_Record(interval, utc, value))
+
+    def interpolate_records(self):
+        present = list()
+        for idx, records in enumerate(self.records):
+            if records.value is None:
+                continue
+            present.append(idx)
+        if len(present) == len(self.records):
+            # Nothing to do, we're full!
+            return
+
+        # Fill out the start and end ranges with the first/last known value
+        for idx in xrange(present[0]):
+            self.records[idx].value = self.records[present[0]].value
+            present.append(idx)
+        for idx in xrange(present[-1], len(self.records)):
+            self.records[idx].value = self.records[present[-1]].value
+            present.append(idx)
+
+        present.sort()
+        # Fill in any gaps resursively.
+        for idx in xrange(len(present) - 1):
+            cur = present[idx]
+            next_present = present[idx + 1]
+            assert self.records[cur].value is not None
+            assert self.records[next_present].value is not None
+            if next_present == cur or next_present == cur + 1:
+                continue
+            middle = cur + ((next_present - cur) / 2)
+            assert self.records[middle].value is None
+            self.records[middle].value = (self.records[cur].value +
+                                          self.records[next_present].value) / 2.
+        self.interpolate_records()
+        assert not None in [record.value for record in self.records]
 
 class RcData(object):
     def __init__(self, filename):
@@ -54,6 +88,9 @@ class RcData(object):
             for (key, value) in row.iteritems():
                 name = key.split('|')[0]
                 self.records[name].add_record(interval, utc, value)
+
+        for record in self.records.itervalues():
+            record.interpolate_records()
 
         self.update_relative_time(self.records[UTC_FIELD].records[0].utc)
 
