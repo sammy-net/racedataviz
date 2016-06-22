@@ -94,7 +94,7 @@ class CourseMapDialog(QtGui.QDialog):
     def update_sync(self):
         for log_data in self._log_data.itervalues():
             log_data.update_line_data()
-            log_data.update_marker(self._current_time)
+            log_data.update_marker(self._time_current)
 
         self._update_scale()
 

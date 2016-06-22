@@ -44,7 +44,7 @@ class SyncDialog(QtGui.QDialog):
         self._ui = ui_sync_dialog.Ui_Dialog()
         self._ui.setupUi(self)
         self._ui.buttonBox.button(QtGui.QDialogButtonBox.Apply).clicked.connect(
-            self.apply_trigger)
+            self._handle_apply_trigger)
         self.setWindowModality(QtCore.Qt.NonModal)
         self._log_widgets = dict()
 
@@ -61,15 +61,17 @@ class SyncDialog(QtGui.QDialog):
             for item in log.records.itervalues():
                 self._ui.eventBox.addItem(item.name)
 
-    def apply_trigger(self):
+    def _handle_apply_trigger(self):
         if not self._ui.eventBox.currentText():
             return
+        self.apply_trigger(self._ui.eventBox.currentText(),
+                           self._ui.triggerSpinBox.value())
 
-        field_name = self._ui.eventBox.currentText()
+    def apply_trigger(self, field_name, value):
         for log_widget in self._log_widgets.itervalues():
             log = log_widget.log
             for index, logged_data in enumerate(log.all(field_name)):
-                if logged_data > self._ui.triggerSpinBox.value():
+                if logged_data > value:
                     log.update_relative_time(log.times()[index])
                     log_widget.update_start_value()
                     break

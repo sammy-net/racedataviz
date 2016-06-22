@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import datetime
 import os
 import sys
@@ -520,14 +521,24 @@ class Tplot(QtGui.QMainWindow):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Plot data from RaceCapture")
+    parser.add_argument("logfiles", nargs="*", help="Logfiles to add to plot")
+    parser.add_argument("--sync", nargs=2, metavar=('name', 'value'),
+                        help="Channel name and value to use for "
+                        "synchronization trigger")
+    args = parser.parse_args(sys.argv[1:])
+
     app = QtGui.QApplication(sys.argv)
     app.setApplicationName('tplot')
 
     tplot = Tplot()
     tplot.show()
 
-    for filename in sys.argv[1:]:
+    for filename in args.logfiles:
         tplot.open(filename)
+
+    if args.sync is not None:
+        tplot._sync_dialog.apply_trigger(args.sync[0], float(args.sync[1]))
 
     sys.exit(app.exec_())
 
