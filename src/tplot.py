@@ -35,6 +35,7 @@ sys.path.append(os.path.join(SCRIPT_PATH, '../python'))
 sys.path.append(os.path.join(SCRIPT_PATH, 'build-x86_64'))
 import ui_tplot_main_window
 
+import course_map_dialog
 import rc_data
 import sync_dialog
 
@@ -195,6 +196,10 @@ class Tplot(QtGui.QMainWindow):
         self.ui.action_Quit.triggered.connect(self.close)
         self.ui.action_Open.triggered.connect(self.open_dialog)
 
+        self._course_map_dialog = course_map_dialog.CourseMapDialog(self)
+        self.ui.actionCourse_Map.triggered.connect(
+            self._course_map_dialog.show)
+
     def open_dialog(self):
         directory = ""
         if len(self.logs):
@@ -221,6 +226,7 @@ class Tplot(QtGui.QMainWindow):
 
         self.ui.recordCombo.addItem(log_name)
         self._sync_dialog.add_log(maybe_log)
+        self._course_map_dialog.add_log(log_name, maybe_log)
 
         item = QtGui.QTreeWidgetItem()
         item.setText(0, log_name)
@@ -349,6 +355,7 @@ class Tplot(QtGui.QMainWindow):
                     self.logs[line.tplot_record_name].all(line.tplot_yname))
         self.update_timeline()
         self.canvas.draw()
+        self._course_map_dialog.update_sync()
 
     def update_timeline(self):
         if self.time_start is not None:

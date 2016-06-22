@@ -21,6 +21,7 @@ Import('canonenv')
 env = canonenv.Clone()
 
 UI_FILES = [
+    'course_map_dialog.ui',
     'sync_dialog.ui',
     'sync_widget.ui',
     'tplot_main_window.ui',

@@ -4,6 +4,9 @@
 
 import copy
 import csv
+import math
+
+from pyproj import Proj
 
 INTERVAL_FIELD = 'Interval'
 UTC_FIELD = 'Utc'
@@ -135,3 +138,24 @@ class RcData(object):
                 lower = mid
 
         return lower
+
+    def get_utm_data(self):
+        """Return the position data for the logfile.  Returns a list of tuples
+        of (relative_time, eastings, northings).
+        """
+
+        relative_times = self.relative_times()
+        lats = self.all('Latitude')
+        lons = self.all('Longitude')
+        assert len(relative_times) == len(lats)
+        assert len(relative_times) == len(lons)
+
+        utm_zone = math.ceil((lons[0] + 180) / 6)
+        p = Proj(proj='utm', zone=utm_zone, ellps='WGS84')
+
+        utms = list()
+        for i, time in enumerate(relative_times):
+            x, y = p(lons[i], lats[i])
+            utms.append((time, x, y))
+
+        return utms
