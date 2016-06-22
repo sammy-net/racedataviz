@@ -135,17 +135,39 @@ class CourseMapDialog(QtGui.QDialog):
                             top=self._bounds[1][1] + y_change)
         self._canvas.draw()
 
-    def _handle_mouse_release(self, event):
-        if event.button != 1:
-            return
-        self._mouse_start = None
+    def _update_bounds(self):
         xlim = self._plot.get_xlim()
         ylim = self._plot.get_ylim()
         self._bounds = ((xlim[0], ylim[0]), (xlim[1], ylim[1]))
 
+    def _handle_mouse_release(self, event):
+        if event.button != 1:
+            return
+        self._mouse_start = None
+        self._update_bounds()
+
     def _handle_scroll(self, event):
-        print "scroll: xy=(%d,%d) xydata=(%s,%s) button=%s step=%d inaxes=%s" % (
-            event.x, event.y, event.xdata,
-            event.ydata, event.button, event.step, event.inaxes)
+        # Determine the relative offset of the clicked position to the
+        # center of the frame so that we can keep the data under the
+        # cursor.
+        (width, height) = self._canvas.get_width_height()
+        x_off = float(width - event.x) / width
+        y_off = float(height - event.y) / height
+        x_scale = (self._bounds[1][0] - self._bounds[0][0]) * (event.step / 10.)
+        y_scale = (self._bounds[1][1] - self._bounds[0][1]) * (event.step / 10.)
+
+        # Check if we've tried to zoom to far and would invert our axes
+        new_xlim = (self._bounds[0][0] + (x_scale * (1. - x_off)),
+                    self._bounds[1][0] - (x_scale * x_off))
+        new_ylim = (self._bounds[0][1] + (y_scale * (1. - y_off)),
+                    self._bounds[1][1] - (y_scale * y_off))
+        if (new_xlim[1] <= new_xlim[0]) or (new_ylim[1] <= new_ylim[0]):
+            return
+
+        self._plot.set_xlim(left=new_xlim[0], right=new_xlim[1])
+        self._plot.set_ylim(bottom=new_ylim[0], top=new_ylim[1])
+        self._update_bounds()
+        self._canvas.draw()
+
 
 # TODO sammy add removing a log
