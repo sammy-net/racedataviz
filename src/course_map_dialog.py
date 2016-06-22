@@ -98,6 +98,16 @@ class CourseMapDialog(QtGui.QDialog):
             maxx = max(maxx, bounds[1][0])
             maxy = max(maxy, bounds[1][1])
 
+        x_size = maxx - minx
+        y_size = maxy - miny
+        xy_delta = x_size - y_size
+        if xy_delta > 0:
+            miny -= xy_delta / 2
+            maxy += xy_delta / 2
+        else:
+            minx += xy_delta / 2
+            maxx -= xy_delta / 2
+
         self._bounds = ((minx, miny), (maxx, maxy))
         self._plot.set_xlim(left=minx, right=maxx)
         self._plot.set_ylim(bottom=miny, top=maxy)
