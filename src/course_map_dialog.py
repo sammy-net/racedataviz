@@ -21,6 +21,9 @@ class _LogMapData(object):
         self.line = matplotlib.lines.Line2D([], [])
         self.line.set_label(log_name)
         self.line.set_color(color)
+        self.marker = matplotlib.lines.Line2D([], [])
+        self.marker.set_marker('o')
+        self.marker.set_color(self.line._color)
         self.bounds = ((0, 0), (0, 0))
         self.update_line_data()
 
@@ -31,6 +34,12 @@ class _LogMapData(object):
         self.line.set_xdata(xdata)
         self.line.set_ydata(ydata)
         self.bounds = ((min(xdata), min(ydata)), (max(xdata), max(ydata)))
+
+    def update_marker(self, new_time):
+        time_index = self.log.relative_index(new_time)
+        xdata = self.utm_data[time_index][1]
+        ydata = self.utm_data[time_index][2]
+        self.marker.set_data(xdata, ydata)
 
 
 class CourseMapDialog(QtGui.QDialog):
@@ -68,6 +77,9 @@ class CourseMapDialog(QtGui.QDialog):
         self._COLORS = 'rgbcmyk'
         self._next_color = 0
         self._bounds = ((0, 0), (0, 0))
+        self._time_current = 0
+        self._total_time = 0
+        self._ui.timeSlider.valueChanged.connect(self._handle_time_slider)
 
     def add_log(self, log_name, log):
         log_data = _LogMapData(log_name, log, self._COLORS[self._next_color])
@@ -75,12 +87,14 @@ class CourseMapDialog(QtGui.QDialog):
         self._next_color = (self._next_color + 1) % len(self._COLORS)
 
         self._plot.add_line(log_data.line)
+        self._plot.add_line(log_data.marker)
         self._plot.legend(loc=2)
         self._update_scale()
 
     def update_sync(self):
         for log_data in self._log_data.itervalues():
             log_data.update_line_data()
+            log_data.update_marker(self._current_time)
 
         self._update_scale()
 
@@ -90,6 +104,7 @@ class CourseMapDialog(QtGui.QDialog):
         miny = 1e10
         maxx = -1e10
         maxy = -1e10
+        max_time = 0
 
         for log_data in self._log_data.itervalues():
             bounds = log_data.bounds
@@ -97,6 +112,8 @@ class CourseMapDialog(QtGui.QDialog):
             miny = min(miny, bounds[0][1])
             maxx = max(maxx, bounds[1][0])
             maxy = max(maxy, bounds[1][1])
+            max_time = max(max_time, log_data.utm_data[-1][0])
+        self._total_time = max_time
 
         x_size = maxx - minx
         y_size = maxy - miny
@@ -168,6 +185,19 @@ class CourseMapDialog(QtGui.QDialog):
         self._plot.set_ylim(bottom=new_ylim[0], top=new_ylim[1])
         self._update_bounds()
         self._canvas.draw()
+
+    def update_time(self, new_time):
+        self._time_current = new_time
+        for log_data in self._log_data.itervalues():
+            log_data.update_marker(new_time)
+        self._canvas.draw()
+        self._ui.elapsedTime.setText(str(new_time))
+
+    def _handle_time_slider(self):
+        if self._total_time == 0:
+            return
+        current = self._ui.timeSlider.value() / 1000.
+        self.update_time(current * self._total_time)
 
 
 # TODO sammy add removing a log

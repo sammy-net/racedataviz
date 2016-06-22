@@ -415,7 +415,7 @@ class Tplot(QtGui.QMainWindow):
         # self.ui.clockEdit.setText('%04d-%02d-%02d %02d:%02d:%02.3f' % (
         #         dt.year, dt.month, dt.day,
         #         dt.hour, dt.minute, dt.second + dt.microsecond / 1e6))
-        self.ui.elapsedEdit.setText('%.3f' % (new_time - self.time_start))
+        self.ui.elapsedEdit.setText('%.3f' % (new_time))
 
         if update_slider:
             with self._updating_slider:
