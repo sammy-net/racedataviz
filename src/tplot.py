@@ -198,6 +198,8 @@ class Tplot(QtGui.QMainWindow):
         self.ui.action_Open.triggered.connect(self.open_dialog)
 
         self._course_map_dialog = course_map_dialog.CourseMapDialog(self)
+        self._course_map_dialog.time_slider_changed.connect(
+            self.update_time)
         self.ui.actionCourse_Map.triggered.connect(
             self._course_map_dialog.show)
 
@@ -417,6 +419,8 @@ class Tplot(QtGui.QMainWindow):
         #         dt.year, dt.month, dt.day,
         #         dt.hour, dt.minute, dt.second + dt.microsecond / 1e6))
         self.ui.elapsedEdit.setText('%.3f' % (new_time))
+
+        self._course_map_dialog.update_time(new_time)
 
         if update_slider:
             with self._updating_slider:

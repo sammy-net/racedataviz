@@ -45,6 +45,8 @@ class _LogMapData(object):
 class CourseMapDialog(QtGui.QDialog):
     """Implements a dialog box to display course maps."""
 
+    time_slider_changed = QtCore.Signal(float)
+
     def __init__(self, parent):
         QtGui.QDialog.__init__(self, parent)
         self._ui = ui_course_map_dialog.Ui_Dialog()
@@ -186,18 +188,24 @@ class CourseMapDialog(QtGui.QDialog):
         self._update_bounds()
         self._canvas.draw()
 
-    def update_time(self, new_time):
+    def update_time(self, new_time, update_slider=True):
+        # Bound the time to our useful range.
+        new_time = max(0, min(new_time, self._total_time))
         self._time_current = new_time
         for log_data in self._log_data.itervalues():
             log_data.update_marker(new_time)
         self._canvas.draw()
         self._ui.elapsedTime.setText(str(new_time))
 
+        if update_slider:
+            self._ui.timeSlider.setValue(1000 * (new_time / self._total_time))
+
     def _handle_time_slider(self):
         if self._total_time == 0:
             return
         current = self._ui.timeSlider.value() / 1000.
-        self.update_time(current * self._total_time)
+        self.update_time(current * self._total_time, update_slider=False)
+        self.time_slider_changed.emit(self._time_current)
 
 
 # TODO sammy add removing a log
