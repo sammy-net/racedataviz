@@ -197,8 +197,8 @@ class CourseMapDialog(QtGui.QDialog):
         self._canvas.draw()
         self._ui.elapsedTime.setText(str(new_time))
 
-        if update_slider:
-            self._ui.timeSlider.setValue(1000 * (new_time / self._total_time))
+        # if update_slider:
+        #     self._ui.timeSlider.setValue(1000 * (new_time / self._total_time))
 
     def _handle_time_slider(self):
         if self._total_time == 0:
