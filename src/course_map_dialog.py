@@ -12,6 +12,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 
 from PySide import QtCore, QtGui
 
+import course_gdal
 import ui_course_map_dialog
 
 class _LogMapData(object):
@@ -70,6 +71,9 @@ class CourseMapDialog(QtGui.QDialog):
         self._canvas.draw = draw
         self._plot = self._figure.add_subplot(111)
 
+        self._gdal_source = course_gdal.GdalSource()
+        self._gdal = None
+
         layout = QtGui.QVBoxLayout(self._ui.mapFrame)
         layout.addWidget(self._canvas, 1)
 
@@ -87,6 +91,12 @@ class CourseMapDialog(QtGui.QDialog):
         log_data = _LogMapData(log_name, log, self._COLORS[self._next_color])
         self._log_data[log_name] = log_data
         self._next_color = (self._next_color + 1) % len(self._COLORS)
+
+        if self._gdal is None:
+            self._gdal = self._gdal_source.get_gdal(
+                log_data.utm_data[0][1], log_data.utm_data[0][2])
+            if self._gdal is not None:
+                self._plot.imshow(self._gdal.image, extent=self._gdal.extent)
 
         self._plot.add_line(log_data.line)
         self._plot.add_line(log_data.marker)
