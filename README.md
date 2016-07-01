@@ -11,8 +11,8 @@ scons python-pyside pyside-tools python-matplotlib python-pyproj
 
 Fedora:
 
-scons python-pyside pyside-tools python2-matplotlib python2-matplotlib-qt4
+scons python-pyside pyside-tools python2-matplotlib python2-matplotlib-qt4 pyproj gdal-python
 
-TODO sammy add the Fedore package for pyproj
-
-After installing the required packages, run scons in the top level directory.
+After installing the required packages, run scons in the top level
+directory.  Once that's complete, run src/tplot.py.  Command line
+arguments are available wth --help.
