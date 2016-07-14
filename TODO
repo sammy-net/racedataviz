@@ -1,19 +1,32 @@
 Rough TODO list:
 
-tplot
------
+General
+-------
 
- * Make the UI sane for one log, thinking that multiple will be a thing in the future.
- * Load multiple logs and find some way to normalize the start and scroll along each other.
+ * Establish the idea of a single course and runs attached to that course.
+
+ * Figure out start/finish as a way to determine the times for each
+   run.  Maybe taking the actual run times as input would allow
+   fitting the start/finish positions based on what events plausibly
+   would fit in the run time?
+
+ * Figure out a way to determine "distance along course" taking into
+   account that some runs will use more distance than others.
 
 3D
 --
 
  * Figure out how to bring up panda3d again at all
- * Instance proj for UTM conversions
+
  * Draw line from start->finish
+
  * Enhance line with width from accelerations
+
  * Draw dashboard (2d text on main window?) and update as time goes by
+
  * Figure out camera controls which allow time slider
- * Load multiple logs and find a way to superimpose (transparency and a toggle between active?).  Time should scrub together.
+
+ * Load multiple logs and find a way to superimpose (transparency and
+   a toggle between active?).  Time should scrub together.
+
  * Get background from USDA
