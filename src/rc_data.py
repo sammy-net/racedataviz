@@ -11,6 +11,8 @@ from pyproj import Proj
 INTERVAL_FIELD = 'Interval'
 UTC_FIELD = 'Utc'
 RELATIVE_TIME_FIELD = 'Relative time'
+DISTANCE_FIELD = 'Distance'
+RELATIVE_DISTANCE_FIELD = 'Relative distance'
 
 class _Record(object):
     def __init__(self, interval, utc, value):
@@ -102,8 +104,20 @@ class RcData(object):
         self.records[RELATIVE_TIME_FIELD] = copy.deepcopy(
             self.records[UTC_FIELD])
         self.records[RELATIVE_TIME_FIELD].name = RELATIVE_TIME_FIELD
-        for record in self.records[RELATIVE_TIME_FIELD].records:
+        min_time = 1e6
+        min_time_idx = -1
+        for idx, record in enumerate(self.records[RELATIVE_TIME_FIELD].records):
             record.value = record.utc - relative_start;
+            if abs(record.value) < min_time:
+                min_time = record.value
+                min_time_idx = idx
+
+        min_distance = self.records[DISTANCE_FIELD].records[min_time_idx].value
+        self.records[RELATIVE_DISTANCE_FIELD] = copy.deepcopy(
+            self.records[DISTANCE_FIELD])
+        self.records[RELATIVE_DISTANCE_FIELD].name = RELATIVE_DISTANCE_FIELD
+        for record in self.records[RELATIVE_DISTANCE_FIELD].records:
+            record.value = record.value - min_distance
 
     def all(self, record):
         return [x.value for x in self.records[record].records]

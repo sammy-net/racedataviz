@@ -262,7 +262,8 @@ class Tplot(QtGui.QMainWindow):
             self.ui.xCombo.addItem(name)
             self.ui.yCombo.addItem(name)
 
-            if name == rc_data.RELATIVE_TIME_FIELD:
+            if (name == rc_data.RELATIVE_TIME_FIELD or
+                name == rc_data.RELATIVE_DISTANCE_FIELD):
                 index[1] = index[0]
 
             index[0] += 1
@@ -350,10 +351,12 @@ class Tplot(QtGui.QMainWindow):
 
     def handle_sync_changed(self):
         for line in self.lines:
-            if line.tplot_xname == rc_data.RELATIVE_TIME_FIELD:
+            if (line.tplot_xname == rc_data.RELATIVE_TIME_FIELD or
+                line.tplot_xname == rc_data.RELATIVE_DISTANCE_FIELD):
                 line.set_xdata(
                     self.logs[line.tplot_record_name].all(line.tplot_xname))
-            if line.tplot_yname == rc_data.RELATIVE_TIME_FIELD:
+            if (line.tplot_yname == rc_data.RELATIVE_TIME_FIELD or
+                line.tplot_yname == rc_data.RELATIVE_DISTANCE_FIELD):
                 line.set_ydata(
                     self.logs[line.tplot_record_name].all(line.tplot_yname))
         self.update_timeline()
